@@ -15,8 +15,6 @@ import java.util.ResourceBundle;
 
 /**
  * Controlador para la vista de gestión de clientes.
- * Vincula los componentes FXML con la lógica del DAO y llena la TableView.
- *
  * Proyecto: Sistema de Gestión de Citas de Atención Técnica
  * Integrante: Steven Flores
  */
@@ -57,7 +55,8 @@ public class ClienteController implements Initializable {
     }
 
     /**
-     * Mapea cada columna de la TableView con las propiedades del modelo Cliente.
+     * Mapea cada columna de la TableView con las propiedades del modelo Cliente
+     * y aplica formato personalizado para mostrar 'Activo'/'Inactivo' en la columna booleana.
      */
     private void configurarTabla() {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
@@ -65,7 +64,22 @@ public class ClienteController implements Initializable {
         colApellidos.setCellValueFactory(new PropertyValueFactory<>("apellidos"));
         colTelefono.setCellValueFactory(new PropertyValueFactory<>("telefono"));
         colCorreo.setCellValueFactory(new PropertyValueFactory<>("correo"));
+
+        // Enlace de la columna booleana activo con formateador visual
         colActivo.setCellValueFactory(new PropertyValueFactory<>("activo"));
+        colActivo.setCellFactory(column -> new TableCell<Cliente, Boolean>() {
+            @Override
+            protected void updateItem(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item ? "Activo" : "Inactivo");
+                    setStyle(item ? "-fx-text-fill: #16a34a; -fx-font-weight: bold;"
+                            : "-fx-text-fill: #dc2626;");
+                }
+            }
+        });
     }
 
     /**
@@ -78,6 +92,23 @@ public class ClienteController implements Initializable {
         tblClientes.setItems(listaClientes);
     }
 
+    /**
+     * Evento al seleccionar una fila de la tabla: carga los datos del cliente
+     * seleccionado en los campos del formulario lateral.
+     */
+    @FXML
+    public void seleccionarClienteTabla() {
+        Cliente clienteSeleccionado = tblClientes.getSelectionModel().getSelectedItem();
+        if (clienteSeleccionado != null) {
+            txtId.setText(String.valueOf(clienteSeleccionado.getId()));
+            txtNombres.setText(clienteSeleccionado.getNombres());
+            txtApellidos.setText(clienteSeleccionado.getApellidos());
+            txtTelefono.setText(clienteSeleccionado.getTelefono());
+            txtCorreo.setText(clienteSeleccionado.getCorreo());
+            chkActivo.setSelected(clienteSeleccionado.isActivo());
+        }
+    }
+
     // Métodos de eventos FXML (Pendientes de implementar lógica completa)
     @FXML public void guardarCliente() {}
     @FXML public void modificarCliente() {}
@@ -85,5 +116,4 @@ public class ClienteController implements Initializable {
     @FXML public void limpiarFormulario() {}
     @FXML public void buscarCliente() {}
     @FXML public void limpiarBusqueda() {}
-    @FXML public void seleccionarClienteTabla() {}
 }
