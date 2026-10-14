@@ -4,6 +4,7 @@ import ni.edu.uam.asistech.dao.ClienteDAO;
 import ni.edu.uam.asistech.model.Cliente;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * Controlador para la vista de gestión de clientes.
+ * Controlador para la gestión de clientes con refresco dinámico de la TableView.
  * Proyecto: Sistema de Gestión de Citas de Atención Técnica
  * Integrante: Steven Flores
  */
@@ -22,6 +23,7 @@ public class ClienteController implements Initializable {
 
     private final ClienteDAO clienteDAO = new ClienteDAO();
     private ObservableList<Cliente> listaClientes;
+    private FilteredList<Cliente> listaFiltrada;
 
     // Componentes FXML del Formulario
     @FXML private TextField txtId;
@@ -32,7 +34,7 @@ public class ClienteController implements Initializable {
     @FXML private TextField txtBuscar;
     @FXML private CheckBox chkActivo;
 
-    // Botones FXML
+    // Botones
     @FXML private Button btnGuardar;
     @FXML private Button btnModificar;
     @FXML private Button btnEliminar;
@@ -54,10 +56,6 @@ public class ClienteController implements Initializable {
         cargarClientes();
     }
 
-    /**
-     * Mapea cada columna de la TableView con las propiedades del modelo Cliente
-     * y aplica formato personalizado para mostrar 'Activo'/'Inactivo' en la columna booleana.
-     */
     private void configurarTabla() {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colNombres.setCellValueFactory(new PropertyValueFactory<>("nombres"));
@@ -65,7 +63,6 @@ public class ClienteController implements Initializable {
         colTelefono.setCellValueFactory(new PropertyValueFactory<>("telefono"));
         colCorreo.setCellValueFactory(new PropertyValueFactory<>("correo"));
 
-        // Enlace de la columna booleana activo con formateador visual
         colActivo.setCellValueFactory(new PropertyValueFactory<>("activo"));
         colActivo.setCellFactory(column -> new TableCell<Cliente, Boolean>() {
             @Override
@@ -83,19 +80,89 @@ public class ClienteController implements Initializable {
     }
 
     /**
-     * Consulta los clientes persistidos en PostgreSQL a través del DAO
-     * y actualiza el contenido de la TableView.
+     * Consulta PostgreSQL a través del DAO y actualiza la lista observable.
      */
     public void cargarClientes() {
         List<Cliente> clientesBD = clienteDAO.obtenerTodos();
         listaClientes = FXCollections.observableArrayList(clientesBD);
-        tblClientes.setItems(listaClientes);
+        listaFiltrada = new FilteredList<>(listaClientes, p -> true);
+        tblClientes.setItems(listaFiltrada);
     }
 
     /**
-     * Evento al seleccionar una fila de la tabla: carga los datos del cliente
-     * seleccionado en los campos del formulario lateral.
+     * Guarda un nuevo cliente y refresca dinámicamente la TableView.
      */
+    @FXML
+    public void guardarCliente() {
+        if (!validarCampos()) return;
+
+        Cliente cliente = new Cliente(
+                txtNombres.getText().trim(),
+                txtApellidos.getText().trim(),
+                txtTelefono.getText().trim(),
+                txtCorreo.getText().trim(),
+                chkActivo.isSelected()
+        );
+
+        if (clienteDAO.insertar(cliente)) {
+            mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cliente registrado correctamente.");
+            cargarClientes();
+            limpiarFormulario();
+        } else {
+            mostrarAlerta(Alert.AlertType.ERROR, "Error", "No se pudo registrar el cliente.");
+        }
+    }
+
+    /**
+     * Modifica el cliente seleccionado y refresca dinámicamente la TableView.
+     */
+    @FXML
+    public void modificarCliente() {
+        if (txtId.getText().isEmpty()) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Atención", "Seleccione un cliente de la tabla para modificar.");
+            return;
+        }
+
+        if (!validarCampos()) return;
+
+        Cliente cliente = new Cliente(
+                Integer.parseInt(txtId.getText()),
+                txtNombres.getText().trim(),
+                txtApellidos.getText().trim(),
+                txtTelefono.getText().trim(),
+                txtCorreo.getText().trim(),
+                chkActivo.isSelected()
+        );
+
+        if (clienteDAO.actualizar(cliente)) {
+            mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cliente actualizado correctamente.");
+            cargarClientes();
+            limpiarFormulario();
+        } else {
+            mostrarAlerta(Alert.AlertType.ERROR, "Error", "No se pudo actualizar el cliente.");
+        }
+    }
+
+    /**
+     * Elimina el cliente seleccionado y refresca dinámicamente la TableView.
+     */
+    @FXML
+    public void eliminarCliente() {
+        if (txtId.getText().isEmpty()) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Atención", "Seleccione un cliente de la tabla para eliminar.");
+            return;
+        }
+
+        int idCliente = Integer.parseInt(txtId.getText());
+        if (clienteDAO.eliminar(idCliente)) {
+            mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cliente eliminado correctamente.");
+            cargarClientes();
+            limpiarFormulario();
+        } else {
+            mostrarAlerta(Alert.AlertType.ERROR, "Error", "No se pudo eliminar el cliente. Verifique que no tenga citas vinculadas.");
+        }
+    }
+
     @FXML
     public void seleccionarClienteTabla() {
         Cliente clienteSeleccionado = tblClientes.getSelectionModel().getSelectedItem();
@@ -109,11 +176,51 @@ public class ClienteController implements Initializable {
         }
     }
 
-    // Métodos de eventos FXML (Pendientes de implementar lógica completa)
-    @FXML public void guardarCliente() {}
-    @FXML public void modificarCliente() {}
-    @FXML public void eliminarCliente() {}
-    @FXML public void limpiarFormulario() {}
-    @FXML public void buscarCliente() {}
-    @FXML public void limpiarBusqueda() {}
+    @FXML
+    public void buscarCliente() {
+        String filtro = txtBuscar.getText().toLowerCase().trim();
+        listaFiltrada.setPredicate(cliente -> {
+            if (filtro.isEmpty()) return true;
+            return cliente.getNombres().toLowerCase().contains(filtro) ||
+                    cliente.getApellidos().toLowerCase().contains(filtro) ||
+                    cliente.getCorreo().toLowerCase().contains(filtro) ||
+                    cliente.getTelefono().contains(filtro);
+        });
+    }
+
+    @FXML
+    public void limpiarBusqueda() {
+        txtBuscar.clear();
+        if (listaFiltrada != null) {
+            listaFiltrada.setPredicate(p -> true);
+        }
+    }
+
+    @FXML
+    public void limpiarFormulario() {
+        txtId.clear();
+        txtNombres.clear();
+        txtApellidos.clear();
+        txtTelefono.clear();
+        txtCorreo.clear();
+        chkActivo.setSelected(true);
+        tblClientes.getSelectionModel().clearSelection();
+    }
+
+    private boolean validarCampos() {
+        if (txtNombres.getText().trim().isEmpty() || txtApellidos.getText().trim().isEmpty() ||
+                txtTelefono.getText().trim().isEmpty() || txtCorreo.getText().trim().isEmpty()) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Campos Incompletos", "Por favor llene todos los campos obligatorios.");
+            return false;
+        }
+        return true;
+    }
+
+    private void mostrarAlerta(Alert.AlertType tipo, String titulo, String mensaje) {
+        Alert alert = new Alert(tipo);
+        alert.setTitle(titulo);
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+        alert.showAndWait();
+    }
 }

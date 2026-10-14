@@ -14,15 +14,11 @@ import java.util.List;
 
 /**
  * DAO para la gestión de citas técnicas en PostgreSQL.
- * Realiza un JOIN con la tabla cliente para obtener el nombre completo .
- *
  */
 public class CitaTecnicaDAO {
 
     /**
-     * Consulta todas las citas realizando un JOIN con la tabla cliente
-     * para obtener el nombre completo en una sola consulta SQL.
-
+     * Consulta todas las citas realizando un JOIN con la tabla cliente.
      */
     public List<CitaTecnica> listar() {
         List<CitaTecnica> listaCitas = new ArrayList<>();
@@ -50,10 +46,10 @@ public class CitaTecnicaDAO {
                 listaCitas.add(cita);
             }
 
-            System.out.println(" Citas recuperadas correctamente: " + listaCitas.size());
+            System.out.println("Citas recuperadas correctamente: " + listaCitas.size());
 
         } catch (SQLException e) {
-            System.err.println(" Error SQL al listar citas: " + e.getMessage());
+            System.err.println("Error SQL al listar citas: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -62,7 +58,6 @@ public class CitaTecnicaDAO {
 
     /**
      * Inserta una nueva cita técnica en la base de datos PostgreSQL.
-     * Utiliza PreparedStatement con parámetros para garantizar la seguridad de los datos.
      */
     public boolean insertar(CitaTecnica cita) {
         String sql = "INSERT INTO cita_tecnica (cliente_id, fecha, hora, tipo_servicio, descripcion, estado) " +
@@ -80,12 +75,68 @@ public class CitaTecnicaDAO {
 
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas > 0) {
-                System.out.println(" Cita técnica registrada con éxito.");
+                System.out.println("Cita técnica registrada con éxito.");
                 return true;
             }
 
         } catch (SQLException e) {
-            System.err.println(" Error SQL al insertar cita técnica: " + e.getMessage());
+            System.err.println("Error SQL al insertar cita técnica: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    /**
+     * Actualiza la información de una cita técnica según su ID.
+     */
+    public boolean actualizar(CitaTecnica cita) {
+        String sql = "UPDATE cita_tecnica SET cliente_id = ?, fecha = ?, hora = ?, tipo_servicio = ?, descripcion = ?, estado = ? WHERE id = ?";
+
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, cita.getClienteId());
+            pstmt.setDate(2, Date.valueOf(cita.getFecha()));
+            pstmt.setTime(3, Time.valueOf(cita.getHora()));
+            pstmt.setString(4, cita.getTipoServicio());
+            pstmt.setString(5, cita.getDescripcion());
+            pstmt.setString(6, cita.getEstado());
+            pstmt.setInt(7, cita.getId());
+
+            int filasAfectadas = pstmt.executeUpdate();
+            if (filasAfectadas > 0) {
+                System.out.println("Cita técnica actualizada con éxito ID: " + cita.getId());
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error SQL al actualizar cita técnica: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    /**
+     * Elimina una cita técnica según su ID.
+     */
+    public boolean eliminar(int id) {
+        String sql = "DELETE FROM cita_tecnica WHERE id = ?";
+
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, id);
+
+            int filasAfectadas = pstmt.executeUpdate();
+            if (filasAfectadas > 0) {
+                System.out.println("Cita técnica eliminada con éxito ID: " + id);
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error SQL al eliminar cita técnica: " + e.getMessage());
             e.printStackTrace();
         }
 
