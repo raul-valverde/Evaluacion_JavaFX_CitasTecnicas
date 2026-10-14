@@ -178,21 +178,40 @@ public class ClienteController implements Initializable {
 
     @FXML
     public void buscarCliente() {
-        String filtro = txtBuscar.getText().toLowerCase().trim();
+        String filtro = txtBuscar.getText();
+
+        // Si el filtro está vacío o es nulo, se muestran todos los clientes
+        if (filtro == null || filtro.trim().isEmpty()) {
+            listaFiltrada.setPredicate(cliente -> true);
+            return;
+        }
+
+        // Normalizar texto a minúsculas para búsqueda case-insensitive
+        String filtroLower = filtro.toLowerCase().trim();
+
         listaFiltrada.setPredicate(cliente -> {
-            if (filtro.isEmpty()) return true;
-            return cliente.getNombres().toLowerCase().contains(filtro) ||
-                    cliente.getApellidos().toLowerCase().contains(filtro) ||
-                    cliente.getCorreo().toLowerCase().contains(filtro) ||
-                    cliente.getTelefono().contains(filtro);
+            // Evaluación de coincidencia parcial en nombres, apellidos o correo
+            boolean coincideNombre = cliente.getNombres() != null &&
+                    cliente.getNombres().toLowerCase().contains(filtroLower);
+
+            boolean coincideApellido = cliente.getApellidos() != null &&
+                    cliente.getApellidos().toLowerCase().contains(filtroLower);
+
+            boolean coincideCorreo = cliente.getCorreo() != null &&
+                    cliente.getCorreo().toLowerCase().contains(filtroLower);
+
+            return coincideNombre || coincideApellido || coincideCorreo;
         });
     }
 
+    /**
+     * Limpia la caja de texto de búsqueda y restaura todos los registros en la TableView.
+     */
     @FXML
     public void limpiarBusqueda() {
         txtBuscar.clear();
         if (listaFiltrada != null) {
-            listaFiltrada.setPredicate(p -> true);
+            listaFiltrada.setPredicate(cliente -> true);
         }
     }
 
