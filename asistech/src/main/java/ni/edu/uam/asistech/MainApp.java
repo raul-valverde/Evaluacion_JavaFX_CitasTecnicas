@@ -18,7 +18,7 @@ public class MainApp extends Application {
     public void start(Stage primaryStage) {
         try {
             // Carga la interfaz visual FXML de clientes
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ni/edu/uam/asistech/view/VistaCliente.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ni/edu/uam/asistech/view/MainView.fxml"));
             Parent root = loader.load();
 
             // Configuración de la escena y el escenario (ventana)
