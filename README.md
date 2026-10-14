@@ -86,14 +86,14 @@ Vista unificada que permite alternar entre la gestión de clientes y citas técn
 
 
 
-3. Búsqueda Parcial de Clientes en Tiempo Real (RF05)
+2. Búsqueda Parcial de Clientes en Tiempo Real (RF05)
 Filtrado case-insensitive por nombres o correo electrónico.
 <img width="1600" height="775" alt="image" src="https://github.com/user-attachments/assets/f1f58f38-1985-44b2-a0f8-099fbba7eaea" />
 
 
 
 
-5. Filtros Combinados de Citas por Fecha y Estado (RF06)
+3. Filtros Combinados de Citas por Fecha y Estado (RF06)
 Evaluación simultánea por texto, fecha y estado de la cita.
 <img width="726" height="165" alt="image" src="https://github.com/user-attachments/assets/9fc92faf-65dc-425a-b732-3faf8039a4aa" />
 <img width="786" height="151" alt="image" src="https://github.com/user-attachments/assets/45448dee-7633-4d1a-805b-40c63d326ddb" />
@@ -103,7 +103,7 @@ Evaluación simultánea por texto, fecha y estado de la cita.
 
 
 
-6. Validaciones de Negocio y Alerta de Confirmación (RF07 / RF08)
+4. Validaciones de Negocio y Alerta de Confirmación (RF07 / RF08)
 Validación de correo único, formato Regex y confirmación modal de eliminación.
 <img width="1235" height="892" alt="image" src="https://github.com/user-attachments/assets/eea1db32-dc5b-4358-ba6f-f554bccf2979" />
 <img width="1238" height="491" alt="image" src="https://github.com/user-attachments/assets/85f88c49-5dff-49ca-a0da-66cf61aade54" />
