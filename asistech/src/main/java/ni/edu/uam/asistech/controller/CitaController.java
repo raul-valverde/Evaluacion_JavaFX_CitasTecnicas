@@ -56,7 +56,7 @@ public class CitaController implements Initializable {
     @FXML private TableColumn<CitaTecnica, String> colEstado;
 
     @FXML private DatePicker dpFechaFiltro;
-    @FXML private ComboBox<String> cmbEstadoFiltro
+    @FXML private ComboBox<String> cmbEstadoFiltro;
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         configurarTabla();
