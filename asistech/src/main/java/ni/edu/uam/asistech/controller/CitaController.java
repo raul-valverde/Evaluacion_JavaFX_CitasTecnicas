@@ -55,6 +55,8 @@ public class CitaController implements Initializable {
     @FXML private TableColumn<CitaTecnica, String> colTipoServicio;
     @FXML private TableColumn<CitaTecnica, String> colEstado;
 
+    @FXML private DatePicker dpFechaFiltro;
+    @FXML private ComboBox<String> cmbEstadoFiltro
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         configurarTabla();
@@ -239,5 +241,48 @@ public class CitaController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+
+    @FXML
+    public void aplicarFiltrosCombinados() {
+        String textoBusqueda = (txtBuscar != null && txtBuscar.getText() != null)
+                ? txtBuscar.getText().toLowerCase().trim() : "";
+        LocalDate fechaSeleccionada = (dpFechaFiltro != null) ? dpFechaFiltro.getValue() : null;
+        String estadoSeleccionado = (cmbEstadoFiltro != null) ? cmbEstadoFiltro.getValue() : null;
+
+        listaFiltrada.setPredicate(cita -> {
+            // 1. Evaluación por búsqueda de texto (Cliente, Servicio o Estado)
+            boolean coincideTexto = textoBusqueda.isEmpty() ||
+                    (cita.getNombreCliente() != null && cita.getNombreCliente().toLowerCase().contains(textoBusqueda)) ||
+                    (cita.getTipoServicio() != null && cita.getTipoServicio().toLowerCase().contains(textoBusqueda)) ||
+                    (cita.getEstado() != null && cita.getEstado().toLowerCase().contains(textoBusqueda));
+
+            // 2. Evaluación por fecha exacta
+            boolean coincideFecha = (fechaSeleccionada == null) ||
+                    (cita.getFecha() != null && cita.getFecha().equals(fechaSeleccionada));
+
+            // 3. Evaluación por estado seleccionado
+            boolean coincideEstado = (estadoSeleccionado == null || estadoSeleccionado.trim().isEmpty() || estadoSeleccionado.equals("Todos")) ||
+                    (cita.getEstado() != null && cita.getEstado().equalsIgnoreCase(estadoSeleccionado));
+
+            // La cita debe cumplir con los 3 criterios al mismo tiempo
+            return coincideTexto && coincideFecha && coincideEstado;
+        });
+    }
+
+    /**
+     * Restablece todos los controles de filtro (texto, fecha y estado)
+     * y recarga la lista completa de citas en la TableView.
+     */
+    @FXML
+    public void limpiarFiltros() {
+        if (txtBuscar != null) txtBuscar.clear();
+        if (dpFechaFiltro != null) dpFechaFiltro.setValue(null);
+        if (cmbEstadoFiltro != null) cmbEstadoFiltro.setValue("Todos");
+
+        // Restaurar el predicado para mostrar todos los registros
+        if (listaFiltrada != null) {
+            listaFiltrada.setPredicate(cita -> true);
+        }
     }
 }
