@@ -14,18 +14,15 @@ public class ClienteDAO {
 
     /**
      * Consulta y recupera todos los registros de la tabla "cliente" ordenados por ID.
-     * Utiliza PreparedStatement y ResultSet en una estructura try-with-resources.
      */
     public List<Cliente> obtenerTodos() {
         List<Cliente> listaClientes = new ArrayList<>();
         String sql = "SELECT id, nombres, apellidos, telefono, correo, activo FROM cliente ORDER BY id ASC";
 
-        // Try-with-resources: Cierra automaticamente Connection, PreparedStatement y ResultSet
         try (Connection conn = ConexionBD.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
 
-            // Recorrido de los resultados obtenidos desde PostgreSQL
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String nombres = rs.getString("nombres");
@@ -34,7 +31,6 @@ public class ClienteDAO {
                 String correo = rs.getString("correo");
                 boolean activo = rs.getBoolean("activo");
 
-                // Creacion del objeto Cliente y se agrega a la lista
                 Cliente cliente = new Cliente(id, nombres, apellidos, telefono, correo, activo);
                 listaClientes.add(cliente);
             }
@@ -51,8 +47,6 @@ public class ClienteDAO {
 
     /**
      * Inserta un nuevo registro de cliente en la base de datos PostgreSQL.
-     * Utiliza PreparedStatement parametrizado para prevenir inyección SQL.
-     *
      */
     public boolean insertar(Cliente cliente) {
         String sql = "INSERT INTO cliente (nombres, apellidos, telefono, correo, activo) VALUES (?, ?, ?, ?, ?)";
@@ -68,12 +62,67 @@ public class ClienteDAO {
 
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas > 0) {
-                System.out.println(" Cliente agregado correctamente: " + cliente.getNombreCompleto());
+                System.out.println("Cliente agregado correctamente: " + cliente.getNombreCompleto());
                 return true;
             }
 
         } catch (SQLException e) {
             System.err.println("Error SQL al agregar cliente: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    /**
+     * Actualiza la información de un cliente existente según su ID.
+     */
+    public boolean actualizar(Cliente cliente) {
+        String sql = "UPDATE cliente SET nombres = ?, apellidos = ?, telefono = ?, correo = ?, activo = ? WHERE id = ?";
+
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, cliente.getNombres());
+            pstmt.setString(2, cliente.getApellidos());
+            pstmt.setString(3, cliente.getTelefono());
+            pstmt.setString(4, cliente.getCorreo());
+            pstmt.setBoolean(5, cliente.isActivo());
+            pstmt.setInt(6, cliente.getId());
+
+            int filasAfectadas = pstmt.executeUpdate();
+            if (filasAfectadas > 0) {
+                System.out.println("Cliente actualizado correctamente ID: " + cliente.getId());
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error SQL al actualizar cliente: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    /**
+     * Elimina un cliente de la base de datos según su ID.
+     */
+    public boolean eliminar(int id) {
+        String sql = "DELETE FROM cliente WHERE id = ?";
+
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, id);
+
+            int filasAfectadas = pstmt.executeUpdate();
+            if (filasAfectadas > 0) {
+                System.out.println("Cliente eliminado correctamente ID: " + id);
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error SQL al eliminar cliente: " + e.getMessage());
             e.printStackTrace();
         }
 
