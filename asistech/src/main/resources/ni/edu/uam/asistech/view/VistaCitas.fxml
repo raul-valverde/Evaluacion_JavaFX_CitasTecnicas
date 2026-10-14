@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="680.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ni.edu.uam.asistech.controller.CitaController">
+    <top>
+        <VBox spacing="5.0" style="-fx-background-color: #1e293b; -fx-padding: 15;">
+            <children>
+                <Label text="TecnoAsistencia Nicaragua S.A." textFill="WHITE">
+                    <font>
+                        <Font name="System Bold" size="20.0" />
+                    </font>
+                </Label>
+                <Label text="Módulo de Programación de Citas Técnicas" textFill="#94a3b8">
+                    <font>
+                        <Font size="14.0" />
+                    </font>
+                </Label>
+            </children>
+        </VBox>
+    </top>
+    <left>
+        <VBox prefWidth="350.0" spacing="12.0" style="-fx-background-color: #f8fafc; -fx-border-color: #e2e8f0; -fx-border-width: 0 1 0 0;" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+            </padding>
+            <children>
+                <Label text="Registro de Cita Técnica" textFill="#334155">
+                    <font>
+                        <Font name="System Bold" size="16.0" />
+                    </font>
+                </Label>
+
+                <GridPane hgap="8.0" vgap="10.0">
+                    <children>
+                        <!-- ID Cita (Deshabilitado) -->
+                        <Label text="ID Cita:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <TextField fx:id="txtId" disable="true" promptText="Autogenerado" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                        <!-- Seleccionar Cliente -->
+                        <Label text="Cliente:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <ComboBox fx:id="cmbCliente" maxWidth="1.1796431100018196E308" promptText="Seleccione un cliente..." GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                        <!-- DatePicker Fecha -->
+                        <Label text="Fecha:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <DatePicker fx:id="dpFecha" maxWidth="1.1796431100018196E308" promptText="Seleccione fecha" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                        <!-- Hora de la Cita -->
+                        <Label text="Hora:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <TextField fx:id="txtHora" promptText="Ej. 09:00" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                        <!-- Tipo de Servicio -->
+                        <Label text="Servicio:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                        <ComboBox fx:id="cmbTipoServicio" maxWidth="1.1796431100018196E308" promptText="Seleccione servicio..." GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+                        <!-- Estado de la Cita -->
+                        <Label text="Estado:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                        <ComboBox fx:id="cmbEstado" maxWidth="1.1796431100018196E308" promptText="Seleccione estado..." GridPane.columnIndex="1" GridPane.rowIndex="5" />
+
+                        <!-- Descripción / Observaciones -->
+                        <Label text="Descripción:" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                        <TextArea fx:id="taDescripcion" prefHeight="70.0" promptText="Detalles del problema o trabajo a realizar..." wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                    </children>
+                </GridPane>
+
+                <!-- Botones de Acción -->
+                <VBox spacing="8.0">
+                    <VBox.margin>
+                        <Insets top="5.0" />
+                    </VBox.margin>
+                    <children>
+                        <HBox spacing="8.0">
+                            <children>
+                                <Button fx:id="btnGuardar" maxWidth="1.1796431100018196E308" onAction="#guardarCita" style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold;" text="Agendar Cita" HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnModificar" maxWidth="1.1796431100018196E308" onAction="#modificarCita" style="-fx-background-color: #d97706; -fx-text-fill: white; -fx-font-weight: bold;" text="Modificar" HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+                        <HBox spacing="8.0">
+                            <children>
+                                <Button fx:id="btnEliminar" maxWidth="1.1796431100018196E308" onAction="#eliminarCita" style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-weight: bold;" text="Cancelar Cita" HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnLimpiar" maxWidth="1.1796431100018196E308" onAction="#limpiarFormulario" style="-fx-background-color: #64748b; -fx-text-fill: white;" text="Limpiar" HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </left>
+    <center>
+        <VBox spacing="12.0" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+            </padding>
+            <children>
+                <!-- Barra de Búsqueda -->
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <children>
+                        <Label text="Buscar / Filtrar:">
+                            <font>
+                                <Font name="System Bold" size="13.0" />
+                            </font>
+                        </Label>
+                        <TextField fx:id="txtBuscar" onKeyReleased="#buscarCita" prefWidth="250.0" promptText="Buscar por cliente, servicio o estado..." HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnLimpiarBusqueda" onAction="#limpiarBusqueda" text="Mostrar Todas" />
+                    </children>
+                </HBox>
+
+                <!-- TableView de Citas -->
+                <TableView fx:id="tblCitas" onMouseClicked="#seleccionarCitaTabla" prefHeight="450.0" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colId" prefWidth="45.0" text="ID" />
+                        <TableColumn fx:id="colCliente" prefWidth="150.0" text="Cliente" />
+                        <TableColumn fx:id="colFecha" prefWidth="90.0" text="Fecha" />
+                        <TableColumn fx:id="colHora" prefWidth="70.0" text="Hora" />
+                        <TableColumn fx:id="colTipoServicio" prefWidth="140.0" text="Tipo Servicio" />
+                        <TableColumn fx:id="colEstado" prefWidth="90.0" text="Estado" />
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                    </columnResizePolicy>
+                </TableView>
+            </children>
+        </VBox>
+    </center>
+</BorderPane>
