@@ -32,9 +32,6 @@ public class ConexionBD {
 
     /**
      * Comprueba la conectividad con la base de datos ejecutando la consulta fija
-     * "SELECT 1" requerida mediante un Statement (sin entrada de usuario).
-     *
-     * @return true si la conexión y la consulta responden con éxito; false si falla.
      */
     public static boolean probarConexion() {
         String sqlPrueba = "SELECT 1";
