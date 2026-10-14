@@ -128,4 +128,31 @@ public class ClienteDAO {
 
         return false;
     }
+    public boolean existeCorreo(String correo, Integer idExcluir) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM cliente WHERE LOWER(correo) = LOWER(?)");
+        if (idExcluir != null) {
+            sql.append(" AND id <> ?");
+        }
+
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+
+            pstmt.setString(1, correo.trim());
+            if (idExcluir != null) {
+                pstmt.setInt(2, idExcluir);
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error SQL al comprobar existencia de correo: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
 }
