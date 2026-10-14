@@ -19,7 +19,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.ResourceBundle;
-
+import java.util.Optional;
 /**
  * Controlador para la gestión de citas técnicas con refresco dinámico.
  * Proyecto: Sistema de Gestión de Citas de Atención Técnica
@@ -164,15 +164,30 @@ public class CitaController implements Initializable {
     @FXML
     public void eliminarCita() {
         if (txtId.getText().isEmpty()) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Atención", "Seleccione una cita para cancelar/eliminar.");
+            mostrarAlerta(Alert.AlertType.WARNING, "Atención", "Seleccione una cita técnica de la tabla para eliminar.");
             return;
         }
 
         int idCita = Integer.parseInt(txtId.getText());
-        if (citaDAO.eliminar(idCita)) {
-            mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cita eliminada correctamente.");
-            cargarCitas();
-            limpiarFormulario();
+        String clienteNombre = (cmbCliente.getValue() != null) ? cmbCliente.getValue().getNombreCompleto() : "Cliente seleccionado";
+
+        // 1. Alerta de Confirmación (RF08)
+        Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmacion.setTitle("Confirmar Cancelación de Cita");
+        confirmacion.setHeaderText("¿Desea eliminar la cita técnica registrada?");
+        confirmacion.setContentText("Cita ID: " + idCita + "\nCliente: " + clienteNombre + "\nFecha: " + dpFecha.getValue());
+
+        Optional<ButtonType> resultado = confirmacion.showAndWait();
+
+        // 2. Ejecutar eliminación solo si se confirma la acción
+        if (resultado.isPresent() && resultado.get() == ButtonType.OK) {
+            if (citaDAO.eliminar(idCita)) {
+                mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "La cita técnica fue eliminada correctamente.");
+                cargarCitas();
+                limpiarFormulario();
+            } else {
+                mostrarAlerta(Alert.AlertType.ERROR, "Error SQL", "No se pudo eliminar la cita técnica de la base de datos.");
+            }
         }
     }
 
