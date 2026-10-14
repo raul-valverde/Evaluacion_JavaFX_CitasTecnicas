@@ -10,14 +10,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class ClienteDAO {
 
     /**
      * Consulta y recupera todos los registros de la tabla "cliente" ordenados por ID.
      * Utiliza PreparedStatement y ResultSet en una estructura try-with-resources.
-     *
-     
      */
     public List<Cliente> obtenerTodos() {
         List<Cliente> listaClientes = new ArrayList<>();
@@ -42,7 +39,7 @@ public class ClienteDAO {
                 listaClientes.add(cliente);
             }
 
-            System.out.println(" Consulta exitosa: Se recuperaron " + listaClientes.size() + " clientes.");
+            System.out.println("Consulta exitosa: Se recuperaron " + listaClientes.size() + " clientes.");
 
         } catch (SQLException e) {
             System.err.println("Error SQL al consultar obtenerTodos(): " + e.getMessage());
@@ -50,5 +47,36 @@ public class ClienteDAO {
         }
 
         return listaClientes;
+    }
+
+    /**
+     * Inserta un nuevo registro de cliente en la base de datos PostgreSQL.
+     * Utiliza PreparedStatement parametrizado para prevenir inyección SQL.
+     *
+     */
+    public boolean insertar(Cliente cliente) {
+        String sql = "INSERT INTO cliente (nombres, apellidos, telefono, correo, activo) VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, cliente.getNombres());
+            pstmt.setString(2, cliente.getApellidos());
+            pstmt.setString(3, cliente.getTelefono());
+            pstmt.setString(4, cliente.getCorreo());
+            pstmt.setBoolean(5, cliente.isActivo());
+
+            int filasAfectadas = pstmt.executeUpdate();
+            if (filasAfectadas > 0) {
+                System.out.println(" Cliente agregado correctamente: " + cliente.getNombreCompleto());
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error SQL al agregar cliente: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
     }
 }
