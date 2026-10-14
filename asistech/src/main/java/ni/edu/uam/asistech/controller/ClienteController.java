@@ -157,27 +157,28 @@ public class ClienteController implements Initializable {
         }
 
         int idCliente = Integer.parseInt(txtId.getText());
-        String nombreCliente = txtNombres.getText() + " " + txtApellidos.getText();
 
-        // 1. Alerta de Confirmación (RF08)
+        // Control de Integridad Referencial
+        if (clienteDAO.tieneCitasAsociadas(idCliente)) {
+            mostrarAlerta(Alert.AlertType.ERROR, "Acción Bloqueada",
+                    "No se puede eliminar este cliente porque tiene citas técnicas registradas a su nombre.");
+            return;
+        }
+
+        // Alerta de Confirmación
         Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
         confirmacion.setTitle("Confirmar Eliminación");
         confirmacion.setHeaderText("¿Está seguro de eliminar al cliente?");
-        confirmacion.setContentText("Cliente: " + nombreCliente + " (ID: " + idCliente + ")\n\nEsta acción no se puede deshacer.");
+        confirmacion.setContentText("Cliente ID: " + idCliente);
 
         Optional<ButtonType> resultado = confirmacion.showAndWait();
-
-        // 2. Ejecutar únicamente si el usuario presiona Aceptar / OK
         if (resultado.isPresent() && resultado.get() == ButtonType.OK) {
-            boolean eliminado = clienteDAO.eliminar(idCliente);
-
-            if (eliminado) {
-                mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "El cliente fue eliminado correctamente de la base de datos.");
+            if (clienteDAO.eliminar(idCliente)) {
+                mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cliente eliminado correctamente de la base de datos.");
                 cargarClientes();
                 limpiarFormulario();
             } else {
-                mostrarAlerta(Alert.AlertType.ERROR, "Error de Eliminación",
-                        "No se pudo eliminar el cliente. Es posible que tenga citas técnicas registradas a su nombre (Restricción SQL).");
+                mostrarAlerta(Alert.AlertType.ERROR, "Error", "No se pudo eliminar el cliente.");
             }
         }
     }

@@ -155,4 +155,26 @@ public class ClienteDAO {
 
         return false;
     }
+    /**
+     * Verifica si el cliente tiene citas asociadas en PostgreSQL (clave foránea).
+     *
+     * @return true si tiene citas vinculadas, false en caso contrario
+     */
+    public boolean tieneCitasAsociadas(int clienteId) {
+        String sql = "SELECT COUNT(*) FROM cita_tecnica WHERE cliente_id = ?";
+        try (Connection conn = ConexionBD.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, clienteId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error En Base de Datos al verificar citas asociadas: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
