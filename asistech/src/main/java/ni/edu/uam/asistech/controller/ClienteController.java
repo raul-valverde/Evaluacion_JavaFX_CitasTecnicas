@@ -13,6 +13,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.Optional;
 
 /**
  * Controlador para la gestión de clientes con refresco dinámico de la TableView.
@@ -49,6 +50,7 @@ public class ClienteController implements Initializable {
     @FXML private TableColumn<Cliente, String> colTelefono;
     @FXML private TableColumn<Cliente, String> colCorreo;
     @FXML private TableColumn<Cliente, Boolean> colActivo;
+    private static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -94,7 +96,8 @@ public class ClienteController implements Initializable {
      */
     @FXML
     public void guardarCliente() {
-        if (!validarCampos()) return;
+        // Pasa null indicando que es un nuevo registro
+        if (!validarCampos(null)) return;
 
         Cliente cliente = new Cliente(
                 txtNombres.getText().trim(),
@@ -105,17 +108,14 @@ public class ClienteController implements Initializable {
         );
 
         if (clienteDAO.insertar(cliente)) {
-            mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cliente registrado correctamente.");
+            mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cliente registrado con éxito.");
             cargarClientes();
             limpiarFormulario();
         } else {
-            mostrarAlerta(Alert.AlertType.ERROR, "Error", "No se pudo registrar el cliente.");
+            mostrarAlerta(Alert.AlertType.ERROR, "Error", "Ocurrió un error al guardar el cliente en la base de datos.");
         }
     }
 
-    /**
-     * Modifica el cliente seleccionado y refresca dinámicamente la TableView.
-     */
     @FXML
     public void modificarCliente() {
         if (txtId.getText().isEmpty()) {
@@ -123,10 +123,13 @@ public class ClienteController implements Initializable {
             return;
         }
 
-        if (!validarCampos()) return;
+        int idCliente = Integer.parseInt(txtId.getText());
+
+        // Pasa el idCliente para ignorar su propio correo durante la verificación de unicidad
+        if (!validarCampos(idCliente)) return;
 
         Cliente cliente = new Cliente(
-                Integer.parseInt(txtId.getText()),
+                idCliente,
                 txtNombres.getText().trim(),
                 txtApellidos.getText().trim(),
                 txtTelefono.getText().trim(),
@@ -139,7 +142,7 @@ public class ClienteController implements Initializable {
             cargarClientes();
             limpiarFormulario();
         } else {
-            mostrarAlerta(Alert.AlertType.ERROR, "Error", "No se pudo actualizar el cliente.");
+            mostrarAlerta(Alert.AlertType.ERROR, "Error", "No se pudo actualizar la información del cliente.");
         }
     }
 
@@ -154,12 +157,28 @@ public class ClienteController implements Initializable {
         }
 
         int idCliente = Integer.parseInt(txtId.getText());
-        if (clienteDAO.eliminar(idCliente)) {
-            mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cliente eliminado correctamente.");
-            cargarClientes();
-            limpiarFormulario();
-        } else {
-            mostrarAlerta(Alert.AlertType.ERROR, "Error", "No se pudo eliminar el cliente. Verifique que no tenga citas vinculadas.");
+        String nombreCliente = txtNombres.getText() + " " + txtApellidos.getText();
+
+        // 1. Alerta de Confirmación (RF08)
+        Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmacion.setTitle("Confirmar Eliminación");
+        confirmacion.setHeaderText("¿Está seguro de eliminar al cliente?");
+        confirmacion.setContentText("Cliente: " + nombreCliente + " (ID: " + idCliente + ")\n\nEsta acción no se puede deshacer.");
+
+        Optional<ButtonType> resultado = confirmacion.showAndWait();
+
+        // 2. Ejecutar únicamente si el usuario presiona Aceptar / OK
+        if (resultado.isPresent() && resultado.get() == ButtonType.OK) {
+            boolean eliminado = clienteDAO.eliminar(idCliente);
+
+            if (eliminado) {
+                mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "El cliente fue eliminado correctamente de la base de datos.");
+                cargarClientes();
+                limpiarFormulario();
+            } else {
+                mostrarAlerta(Alert.AlertType.ERROR, "Error de Eliminación",
+                        "No se pudo eliminar el cliente. Es posible que tenga citas técnicas registradas a su nombre (Restricción SQL).");
+            }
         }
     }
 
@@ -226,12 +245,35 @@ public class ClienteController implements Initializable {
         tblClientes.getSelectionModel().clearSelection();
     }
 
-    private boolean validarCampos() {
-        if (txtNombres.getText().trim().isEmpty() || txtApellidos.getText().trim().isEmpty() ||
-                txtTelefono.getText().trim().isEmpty() || txtCorreo.getText().trim().isEmpty()) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Campos Incompletos", "Por favor llene todos los campos obligatorios.");
+    private boolean validarCampos(Integer idClienteActual) {
+        String nombres = txtNombres.getText().trim();
+        String apellidos = txtApellidos.getText().trim();
+        String telefono = txtTelefono.getText().trim();
+        String correo = txtCorreo.getText().trim();
+
+        // 1. Validar Campos Obligatorios
+        if (nombres.isEmpty() || apellidos.isEmpty() || telefono.isEmpty() || correo.isEmpty()) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Campos Obligatorios",
+                    "Todos los campos (Nombres, Apellidos, Teléfono y Correo) son requeridos.");
             return false;
         }
+
+        // 2. Validar Formato Regex del Correo
+        if (!correo.matches(EMAIL_REGEX)) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Formato Inválido",
+                    "El correo electrónico ingresado no tiene un formato válido (Ej. usuario@dominio.com).");
+            txtCorreo.requestFocus();
+            return false;
+        }
+
+        // 3. Validar Unicidad de Correo en PostgreSQL
+        if (clienteDAO.existeCorreo(correo, idClienteActual)) {
+            mostrarAlerta(Alert.AlertType.ERROR, "Correo Duplicado",
+                    "El correo electrónico '" + correo + "' ya pertenece a otro cliente registrado.");
+            txtCorreo.requestFocus();
+            return false;
+        }
+
         return true;
     }
 
