@@ -1,31 +1,37 @@
 package ni.edu.uam.asistech.controller;
 
+import ni.edu.uam.asistech.dao.CitaTecnicaDAO;
 import ni.edu.uam.asistech.dao.ClienteDAO;
 import ni.edu.uam.asistech.model.CitaTecnica;
 import ni.edu.uam.asistech.model.Cliente;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.StringConverter;
 
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * Controlador para la gestión de citas técnicas.
- * Vincula la interfaz VistaCitas.fxml con la lógica de negocio y PostgreSQL.
- *
+ * Controlador para la gestión de citas técnicas con refresco dinámico.
  * Proyecto: Sistema de Gestión de Citas de Atención Técnica
- * Integrante: Steven Flores
+ * Integrantes: Steven Flores / Nora Obregón
  */
 public class CitaController implements Initializable {
 
+    private final CitaTecnicaDAO citaDAO = new CitaTecnicaDAO();
     private final ClienteDAO clienteDAO = new ClienteDAO();
+    private ObservableList<CitaTecnica> listaCitas;
+    private FilteredList<CitaTecnica> listaFiltrada;
 
-    // Componentes FXML
     @FXML private TextField txtId;
     @FXML private ComboBox<Cliente> cmbCliente;
     @FXML private DatePicker dpFecha;
@@ -44,69 +50,194 @@ public class CitaController implements Initializable {
     @FXML private TableView<CitaTecnica> tblCitas;
     @FXML private TableColumn<CitaTecnica, Integer> colId;
     @FXML private TableColumn<CitaTecnica, String> colCliente;
-    @FXML private TableColumn<CitaTecnica, String> colFecha;
-    @FXML private TableColumn<CitaTecnica, String> colHora;
+    @FXML private TableColumn<CitaTecnica, LocalDate> colFecha;
+    @FXML private TableColumn<CitaTecnica, LocalTime> colHora;
     @FXML private TableColumn<CitaTecnica, String> colTipoServicio;
     @FXML private TableColumn<CitaTecnica, String> colEstado;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        configurarTabla();
         cargarClientesEnComboBox();
         inicializarCombosEstaticos();
+        cargarCitas();
     }
 
-    /**
-     * Consulta todos los clientes registrados en PostgreSQL usando ClienteDAO
-     * y los carga en el ComboBox configurando el formato visual del objeto.
-     */
+    private void configurarTabla() {
+        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colCliente.setCellValueFactory(new PropertyValueFactory<>("nombreCliente"));
+        colFecha.setCellValueFactory(new PropertyValueFactory<>("fecha"));
+        colHora.setCellValueFactory(new PropertyValueFactory<>("hora"));
+        colTipoServicio.setCellValueFactory(new PropertyValueFactory<>("tipoServicio"));
+        colEstado.setCellValueFactory(new PropertyValueFactory<>("estado"));
+    }
+
+    public void cargarCitas() {
+        List<CitaTecnica> citasBD = citaDAO.listar();
+        listaCitas = FXCollections.observableArrayList(citasBD);
+        listaFiltrada = new FilteredList<>(listaCitas, p -> true);
+        tblCitas.setItems(listaFiltrada);
+    }
+
     private void cargarClientesEnComboBox() {
         List<Cliente> clientes = clienteDAO.obtenerTodos();
-        ObservableList<Cliente> listaClientes = FXCollections.observableArrayList(clientes);
-        cmbCliente.setItems(listaClientes);
-
-        // Configurar formateador visual para el ComboBox de Cliente (Mostrar ID y Nombre)
+        cmbCliente.setItems(FXCollections.observableArrayList(clientes));
         cmbCliente.setConverter(new StringConverter<Cliente>() {
             @Override
             public String toString(Cliente cliente) {
-                if (cliente == null) {
-                    return "";
-                }
-                return cliente.getId() + " - " + cliente.getNombres() + " " + cliente.getApellidos();
+                return (cliente == null) ? "" : cliente.getId() + " - " + cliente.getNombres() + " " + cliente.getApellidos();
             }
 
             @Override
             public Cliente fromString(String string) {
-                return null; // No requerido para selección
+                return null;
             }
         });
     }
 
-    /**
-     * Inicializa las opciones predefinidas para Servicio y Estado.
-     */
     private void inicializarCombosEstaticos() {
         cmbTipoServicio.setItems(FXCollections.observableArrayList(
-                "Mantenimiento Preventivo",
-                "Reparación de Hardware",
-                "Instalación de Software",
-                "Diagnóstico de Red",
-                "Soporte Técnico General"
+                "Mantenimiento Preventivo", "Reparación de Hardware", "Instalación de Software", "Diagnóstico de Red", "Soporte Técnico General"
         ));
-
         cmbEstado.setItems(FXCollections.observableArrayList(
-                "Pendiente",
-                "En proceso",
-                "Finalizada",
-                "Cancelada"
+                "Pendiente", "En proceso", "Finalizada", "Cancelada"
         ));
     }
 
-    // Métodos de eventos FXML (Pendientes de implementación de lógica)
-    @FXML public void guardarCita() {}
-    @FXML public void modificarCita() {}
-    @FXML public void eliminarCita() {}
-    @FXML public void limpiarFormulario() {}
-    @FXML public void buscarCita() {}
-    @FXML public void limpiarBusqueda() {}
-    @FXML public void seleccionarCitaTabla() {}
+    @FXML
+    public void guardarCita() {
+        if (!validarCampos()) return;
+
+        try {
+            CitaTecnica cita = new CitaTecnica(
+                    cmbCliente.getValue().getId(),
+                    dpFecha.getValue(),
+                    LocalTime.parse(txtHora.getText().trim()),
+                    cmbTipoServicio.getValue(),
+                    taDescripcion.getText().trim(),
+                    cmbEstado.getValue()
+            );
+
+            if (citaDAO.insertar(cita)) {
+                mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cita programada correctamente.");
+                cargarCitas();
+                limpiarFormulario();
+            }
+        } catch (DateTimeParseException e) {
+            mostrarAlerta(Alert.AlertType.ERROR, "Formato Incorrecto", "Ingrese la hora en formato HH:mm (Ej. 09:30).");
+        }
+    }
+
+    @FXML
+    public void modificarCita() {
+        if (txtId.getText().isEmpty()) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Atención", "Seleccione una cita de la tabla.");
+            return;
+        }
+
+        if (!validarCampos()) return;
+
+        try {
+            CitaTecnica cita = new CitaTecnica(
+                    Integer.parseInt(txtId.getText()),
+                    cmbCliente.getValue().getId(),
+                    cmbCliente.getValue().getNombreCompleto(),
+                    dpFecha.getValue(),
+                    LocalTime.parse(txtHora.getText().trim()),
+                    cmbTipoServicio.getValue(),
+                    taDescripcion.getText().trim(),
+                    cmbEstado.getValue()
+            );
+
+            if (citaDAO.actualizar(cita)) {
+                mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cita actualizada correctamente.");
+                cargarCitas();
+                limpiarFormulario();
+            }
+        } catch (DateTimeParseException e) {
+            mostrarAlerta(Alert.AlertType.ERROR, "Formato Incorrecto", "Ingrese la hora en formato HH:mm (Ej. 09:30).");
+        }
+    }
+
+    @FXML
+    public void eliminarCita() {
+        if (txtId.getText().isEmpty()) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Atención", "Seleccione una cita para cancelar/eliminar.");
+            return;
+        }
+
+        int idCita = Integer.parseInt(txtId.getText());
+        if (citaDAO.eliminar(idCita)) {
+            mostrarAlerta(Alert.AlertType.INFORMATION, "Éxito", "Cita eliminada correctamente.");
+            cargarCitas();
+            limpiarFormulario();
+        }
+    }
+
+    @FXML
+    public void seleccionarCitaTabla() {
+        CitaTecnica cita = tblCitas.getSelectionModel().getSelectedItem();
+        if (cita != null) {
+            txtId.setText(String.valueOf(cita.getId()));
+            dpFecha.setValue(cita.getFecha());
+            txtHora.setText(cita.getHora().toString());
+            cmbTipoServicio.setValue(cita.getTipoServicio());
+            cmbEstado.setValue(cita.getEstado());
+            taDescripcion.setText(cita.getDescripcion());
+
+            cmbCliente.getItems().stream()
+                    .filter(c -> c.getId() == cita.getClienteId())
+                    .findFirst()
+                    .ifPresent(c -> cmbCliente.setValue(c));
+        }
+    }
+
+    @FXML
+    public void buscarCita() {
+        String filtro = txtBuscar.getText().toLowerCase().trim();
+        listaFiltrada.setPredicate(cita -> {
+            if (filtro.isEmpty()) return true;
+            return cita.getNombreCliente().toLowerCase().contains(filtro) ||
+                    cita.getTipoServicio().toLowerCase().contains(filtro) ||
+                    cita.getEstado().toLowerCase().contains(filtro);
+        });
+    }
+
+    @FXML
+    public void limpiarBusqueda() {
+        txtBuscar.clear();
+        if (listaFiltrada != null) {
+            listaFiltrada.setPredicate(p -> true);
+        }
+    }
+
+    @FXML
+    public void limpiarFormulario() {
+        txtId.clear();
+        cmbCliente.setValue(null);
+        dpFecha.setValue(null);
+        txtHora.clear();
+        cmbTipoServicio.setValue(null);
+        cmbEstado.setValue(null);
+        taDescripcion.clear();
+        tblCitas.getSelectionModel().clearSelection();
+    }
+
+    private boolean validarCampos() {
+        if (cmbCliente.getValue() == null || dpFecha.getValue() == null ||
+                txtHora.getText().trim().isEmpty() || cmbTipoServicio.getValue() == null ||
+                cmbEstado.getValue() == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Campos Incompletos", "Complete todos los campos obligatorios.");
+            return false;
+        }
+        return true;
+    }
+
+    private void mostrarAlerta(Alert.AlertType tipo, String titulo, String mensaje) {
+        Alert alert = new Alert(tipo);
+        alert.setTitle(titulo);
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+        alert.showAndWait();
+    }
 }
