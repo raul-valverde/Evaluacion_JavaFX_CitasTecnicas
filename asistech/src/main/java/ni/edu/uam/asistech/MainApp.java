@@ -27,6 +27,8 @@ public class MainApp extends Application {
             primaryStage.setScene(scene);
             primaryStage.setMinWidth(900);
             primaryStage.setMinHeight(600);
+            // ABRIR EN PANTALLA COMPLETA / MAXIMIZADA
+            primaryStage.setMaximized(true);
             primaryStage.show();
 
             System.out.println(" Aplicación JavaFX iniciada con éxito.");
